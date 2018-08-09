@@ -14,7 +14,7 @@ let DebugBorderColor = UIColor.blue
 
 //MARK:-
 public struct BoxAppearance{
-//MARK:-
+    //MARK:-
     /// To set whether DialogBox should be auto dismissed after given wait time (autoDismissWaitTime).
     public var autoDismiss : Bool! = false
     
@@ -54,7 +54,7 @@ public struct BoxAppearance{
         
         public var backgroundColor : UIColor! = UIColor.white
     }
-
+    
     // MARK:- ---- Container background Settings ---- -
     /// Container background view settings in which DialogBox will be shown.
     public var containerBackground = ContainerBackground()
@@ -67,12 +67,12 @@ public struct BoxAppearance{
         /// To set whether Dialogbox should be dismissed on tap, either on background or on the DialogBox itself
         public var  tapToDismiss : Bool! = false
     }
-
+    
     // MARK:- ---- Title Settings ---- -
     /// Title settigs
     public var title = Title()
     public struct Title{
-
+        
         public var textAlignment : NSTextAlignment! = NSTextAlignment.center
         
         public var textColor : UIColor! = UIColor.black
@@ -166,7 +166,7 @@ public struct BoxAppearance{
             public var imageName : String?
         }
     }
-
+    
     // MARK:- ---- Button Settings ---- -
     /// Button general settings
     public var button = Button()
@@ -213,7 +213,7 @@ public struct BoxAppearance{
             public var width : Float! = 60
         }
     }
-
+    
     
     // MARK:- ---- Close Button Settings ---- -
     public var closeButton = CloseButton()
@@ -254,6 +254,9 @@ public struct BoxButtonAppearance{
     
     public var titleFont : UIFont?
     
+    public var shadowOn : Bool?
+    
+    public var shadowColor : UIColor?
     public init() {}
 }
 
@@ -269,7 +272,7 @@ public enum BoxPosition{
 }
 
 /**
-  Options to specify how DialogBox will be shown.
+ Options to specify how DialogBox will be shown.
  */
 public enum BoxAnimationType{
     case none
@@ -365,7 +368,7 @@ public class DialogBox : UIView{
     @discardableResult public static func show(title: String?, message: String?, superView: UIView!, boxApp : BoxAppearance?, buttonTitle:String, buttonAppearance: BoxButtonAppearance?, actionBlock: (() -> ())?)  -> DialogBox{
         let box = DialogBox()
         box.addButton(title: buttonTitle, buttonAppearance: buttonAppearance, actionBlock: actionBlock)
-
+        
         box.show(title: title, message: message, superView: superView,appearance: boxApp, closeBtnBlock: nil)
         return box
     }
@@ -419,13 +422,20 @@ public class DialogBox : UIView{
         button.tag=(arrButtons.count)
         button.translatesAutoresizingMaskIntoConstraints=false
         button.setTitle(title, for:UIControlState.normal)
-        button.clipsToBounds=true
+        
         button.addTarget(self, action: #selector(buttonTapped(button:)), for: UIControlEvents.touchUpInside)
-
+        
+        if (buttonAppearance?.shadowOn)! {
+            button.layer.shadowColor = buttonAppearance?.shadowColor?.cgColor
+            button.layer.shadowOpacity = 1
+            button.layer.shadowOffset = CGSize(width: 0, height: 3)
+            button.layer.shadowRadius = 6
+        }
+        
         arrButtons.append(button)
     }
     
-    func dismiss(){
+    @objc func dismiss(){
         if(isDismissCalled){
             return
         }
@@ -545,11 +555,11 @@ public class DialogBox : UIView{
         if(title != nil){
             self.title = title
         }
-    
+        
         if(message != nil){
             self.message = message
         }
-    
+        
         if(closeBtnBlock != nil){
             self.closeBlock=closeBtnBlock
         }
@@ -559,7 +569,7 @@ public class DialogBox : UIView{
     
     private func updateContent(title:String?, message: String?,appearance: BoxAppearance? , closeBtnBlock:(() -> ())?){
         viewDialog.alpha = 0.0
-    
+        
         if(btnClose != nil) {
             btnClose!.removeFromSuperview()
             btnClose=nil
@@ -568,15 +578,15 @@ public class DialogBox : UIView{
         if(closeBtnBlock != nil){
             self.closeBlock=closeBtnBlock
         }
-    
+        
         for view in viewDialog.subviews{
             view.removeFromSuperview()
         }
-    
+        
         for view in btnContainer.subviews{
             view.removeFromSuperview()
         }
-    
+        
         arrButtons.removeAll()
         setup()
     }
@@ -765,7 +775,7 @@ public class DialogBox : UIView{
             })
         }
     }
-
+    
     override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let hitView = super.hitTest(point, with: event)
         
@@ -798,6 +808,7 @@ public class DialogBox : UIView{
         if(style != BoxBackgroundStyle.none){
             if(style == BoxBackgroundStyle.lightBlur || style == BoxBackgroundStyle.extraLightBlur || style == BoxBackgroundStyle.darkBlur){
                 viewBg = getBlurbackgroundView(style: style!)
+                viewBg.alpha = 0.9
             }else{
                 let bgColor = boxAppearance.containerBackground.color
                 
@@ -817,7 +828,7 @@ public class DialogBox : UIView{
             self.superview?.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[viewBg]-0-|", options: NSLayoutFormatOptions.directionLeftToRight, metrics: nil, views: dic))
         }
     }
-
+    
     
     private func setupContentLayout() -> Float{
         var y = boxAppearance.layout.padding!
@@ -860,7 +871,7 @@ public class DialogBox : UIView{
         }else{
             y = y + boxAppearance.layout.padding
         }
-
+        
         if(boxAppearance.icon.type != nil &&  (boxAppearance.icon.position == BoxIconPosition.leftFullHeight)){
             setupIcon(yAxis: y)
         }
@@ -886,14 +897,14 @@ public class DialogBox : UIView{
             viewDialogSuperView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[viewPopup]-0-|", options: NSLayoutFormatOptions.directionLeftToRight, metrics: nil, views: dic))
             viewDialogSuperView.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[viewPopup]-0-|", options: NSLayoutFormatOptions.directionLeftToRight, metrics: nil, views: dic))
         }else{
-            UIView.animate(withDuration: 0.15, animations: { 
+            UIView.animate(withDuration: 0.15, animations: {
                 self.layoutBoxHeight.constant = CGFloat(height)
                 self.layoutBoxWidth.constant = CGFloat(self.boxAppearance.layout.width)
                 self.applySettingsOnContainerView()
                 self.viewDialogSuperView.layoutIfNeeded()
             }, completion: { (finished) in
                 if(finished){
-                    UIView.animate(withDuration: 0.15, animations: { 
+                    UIView.animate(withDuration: 0.15, animations: {
                         self.viewDialog.alpha=1.0
                     })
                 }
@@ -928,7 +939,11 @@ public class DialogBox : UIView{
         if(boxAppearance.icon.type != nil && (boxAppearance.icon.position == BoxIconPosition.topLeft)){
             let iconMargin = getSpacing(boxAppearance.icon.margin)!
             let iconHorizontalSpacing = (iconPadding.left + iconPadding.right)
-            x = boxAppearance.layout.padding + Float(boxAppearance.icon.size.width) + iconHorizontalSpacing + boxAppearance.layout.spacing + margin.left + iconMargin.right + iconMargin.left
+            
+            let firstSum = boxAppearance.layout.padding + Float(boxAppearance.icon.size.width)
+            let secondSum = iconHorizontalSpacing + boxAppearance.layout.spacing
+            let thirdSum = margin.left + iconMargin.right + iconMargin.left
+            x = firstSum + secondSum + thirdSum
             
             if(boxAppearance.icon.separator.show){
                 x += boxAppearance.icon.separator.borderWidth
@@ -956,7 +971,7 @@ public class DialogBox : UIView{
         
         // Calculate height
         let maxTitleWidth=availableWidth-(padding.left+padding.right)
-        var frame=(title! as NSString).boundingRect(with: CGSize(width: Double(maxTitleWidth), height: 1000.0), options: NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin), attributes: [NSFontAttributeName:boxAppearance.title.font], context: nil)
+        var frame=(title! as NSString).boundingRect(with: CGSize(width: Double(maxTitleWidth), height: 1000.0), options: NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin), attributes: [kCTFontAttributeName as NSAttributedStringKey:boxAppearance.title.font], context: nil)
         frame.size.height=ceil(frame.height)
         
         // Setup title label
@@ -1009,7 +1024,11 @@ public class DialogBox : UIView{
             let iconMargin = getSpacing(boxAppearance.icon.margin)!
             let iconPadding = getSpacing(boxAppearance.icon.padding)!
             let iconHorizontalSpacing = (iconPadding.left + iconPadding.right)
-            x = boxAppearance.layout.padding + Float(boxAppearance.icon.size.width) + iconHorizontalSpacing + boxAppearance.layout.spacing + margin.left + iconMargin.left + iconMargin.right
+            
+            let firstSum = boxAppearance.layout.padding + Float(boxAppearance.icon.size.width)
+            let secondSum = iconHorizontalSpacing + boxAppearance.layout.spacing
+            let thirdSum = margin.left + iconMargin.left + iconMargin.right
+            x = firstSum + secondSum + thirdSum
             
             if(boxAppearance.icon.separator.show){
                 x += boxAppearance.icon.separator.borderWidth
@@ -1020,7 +1039,7 @@ public class DialogBox : UIView{
             let iconMargin = getSpacing(boxAppearance.icon.margin)!
             let iconPadding = getSpacing(boxAppearance.icon.padding)!
             let iconHorizontalSpacing = (iconPadding.left + iconPadding.right)
-                
+            
             x = Float(boxAppearance.icon.size.width) + iconHorizontalSpacing + boxAppearance.layout.spacing + iconMargin.left + margin.left
             
             if(boxAppearance.icon.separator.show){
@@ -1041,7 +1060,7 @@ public class DialogBox : UIView{
         }
         
         // Calculate height
-        var frame=(message! as NSString).boundingRect(with: CGSize(width: Double(availableWidth), height: 1000), options: NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin), attributes: [NSFontAttributeName:boxAppearance.message.font], context: nil)
+        var frame=(message! as NSString).boundingRect(with: CGSize(width: Double(availableWidth), height: 1000), options: NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin), attributes: [kCTFontAttributeName as NSAttributedStringKey:boxAppearance.message.font], context: nil)
         frame.size.height=ceil(frame.size.height)
         
         // Setup icon as per the message height if it's position set to leftBesideMessage
@@ -1254,7 +1273,7 @@ public class DialogBox : UIView{
         
         // Setup button container
         btnContainer = UIView.init()
-        btnContainer.clipsToBounds = true
+        btnContainer.clipsToBounds = false
         applyDebugBoundary(view: btnContainer)
         btnContainer.translatesAutoresizingMaskIntoConstraints = false
         viewDialog.addSubview(btnContainer)
@@ -1264,7 +1283,7 @@ public class DialogBox : UIView{
         let iconPadding = getSpacing(boxAppearance.icon.padding)!
         
         if(boxAppearance.button.position == BoxButtonPosition.bottom && boxAppearance.button.bottomPosition.layout == BoxButtonBottomPositionLayout.withoutSpacing){
-
+            
             if(boxAppearance.icon.type != nil && boxAppearance.icon.position == BoxIconPosition.leftFullHeight){
                 containerX = Float(boxAppearance.icon.size.width) + (iconPadding.left + iconPadding.right)
                 containerWidth = boxAppearance.layout.width! - containerX
@@ -1361,7 +1380,17 @@ public class DialogBox : UIView{
             hSpacing = boxAppearance.button.bottomPosition.horizontalSpacing
             vSpacing=boxAppearance.button.bottomPosition.verticalSpacing
             roundedRadius = boxAppearance.button.bottomPosition.cornerRadius
+            
             btnWidth = (containerWidth-(Float(noOfButtonsInSigleRow-1)*hSpacing))/Float(noOfButtonsInSigleRow)
+            
+            if (arrButtons.count != 1) {
+                roundedRadius = 0
+                
+            }else {
+                btnWidth = 200
+                containerWidth = 200
+                containerX = (boxAppearance.layout.width! - 200) / 2
+            }
             
             var bgColor: UIColor, textColor: UIColor
             var font : UIFont
@@ -1401,7 +1430,7 @@ public class DialogBox : UIView{
                     borderColor=boxAppearance.button.borderColor
                 }
                 
-                btn.setBackgroundImage(imageWithColor(color: bgColor), for: UIControlState.normal)
+                btn.backgroundColor = bgColor
                 btn.setTitleColor(textColor, for: UIControlState.normal)
                 btn.titleLabel?.font=font
                 btnContainer.addSubview(btn)
@@ -1639,7 +1668,7 @@ public class DialogBox : UIView{
         
         applyDebugBoundary(view: btnClose!)
     }
-
+    
     
     //MARK:- ---- Add constraints ---- -
     
@@ -1733,9 +1762,9 @@ public class DialogBox : UIView{
         layoutBoxHeight = NSLayoutConstraint.init(item: viewDialogSuperView, attribute: NSLayoutAttribute.height, relatedBy: NSLayoutRelation.equal, toItem: nil, attribute: NSLayoutAttribute.notAnAttribute, multiplier: 1, constant: CGFloat(height))
         addConstraint(layoutBoxHeight)
     }
-
+    
     //MARK:- ---- Button Events ---- -
-    func buttonTapped(button: DialogBoxButton){
+    @objc func buttonTapped(button: DialogBoxButton){
         if((button.actionBlock) != nil){
             button.actionBlock!()
         }
@@ -1812,19 +1841,19 @@ public class DialogBox : UIView{
         
         return image!
     }
-
+    
 }
 
 //MARK:-
 class DialogBoxButton: UIButton {
-//MARK:-
+    //MARK:-
     var title: String!
     var appearance: BoxButtonAppearance!
     var actionBlock : (() -> ())?
 }
 //MARK:-
 struct Rect {
-//MARK:-
+    //MARK:-
     var x : Float
     var y : Float
     var width : Float
@@ -1833,7 +1862,7 @@ struct Rect {
 
 //MARK:-
 struct Spacing {
-//MARK:-
+    //MARK:-
     var left : Float
     var top : Float
     var right : Float
